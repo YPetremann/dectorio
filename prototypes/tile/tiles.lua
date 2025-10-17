@@ -11,6 +11,8 @@ local base_refined_concrete = data.raw["tile"]["refined-concrete"]
 local base_refined_hazard_left = data.raw["tile"]["refined-hazard-concrete-left"]
 local base_refined_hazard_right = data.raw["tile"]["refined-hazard-concrete-right"]
 
+local set_modifier = DECT.CONFIG.SETTINGS["painted_concrete_speed_modifier"]
+
 -- Sort out the layers
 local tile_layer = {
 	gravel = 60,
@@ -148,26 +150,21 @@ if DECT.ENABLED["wood-floor"] then
 end
 
 if DECT.ENABLED["concrete"] then
-	data:extend(
-		{
-			{
-				type = "tile",
-				name = "dect-concrete-grid",
-				needs_correction = false,
-				transition_merges_with_tile = "concrete",
-				minable = {mining_time = 0.1, result = "dect-concrete-grid"},
-				mined_sound = base_concrete.mined_sound,
-				collision_mask = {layers = {ground_tile = true}},
-				walking_speed_modifier = base_concrete.walking_speed_modifier,
-				layer = tile_layer.grid,
-				decorative_removal_probability = decorative_removal_probability,
-				variants = tile_variants_material("concrete", "grid"),
-				walking_sound = base_concrete.walking_sound,
-				map_color = {r = 130, g = 130, b = 130},
-				vehicle_friction_modifier = base_concrete.vehicle_friction_modifier
-			}
-		}
-	)
+	local grid_concrete = table.deepcopy(base_hazard_left)
+	meld(grid_concrete, {
+		name = "dect-concrete-grid",
+		order = "a[artificial]-b[tier-2]-b[concrete-grid]",
+		next_direction = meld.delete(),
+		minable = { mining_time = 0.1, result = "dect-concrete-grid" },
+		layer = tile_layer.grid,
+		decorative_removal_probability = decorative_removal_probability,
+		walking_speed_modifier = base_concrete.walking_speed_modifier * set_modifier,
+		vehicle_friction_modifier = base_concrete.vehicle_friction_modifier * set_modifier,
+		placeable_by = { item = "dect-concrete-grid", count = 1 },
+		variants = { material_background = { picture = "__Dectorio__/graphics/terrain/concrete/grid/hr-concrete.png" } },
+		map_color = { r = 130, g = 130, b = 130 },
+	})
+	data:extend { grid_concrete }
 
 	-- Correct the offset so that concrete border is drawn on top of painted concrete
 	--base_concrete.transition_overlay_layer_offset = tile_layer.paint - tile_layer.concrete + 1
@@ -202,8 +199,6 @@ if DECT.ENABLED["gravel"] then
 end
 
 if DECT.ENABLED["painted-concrete"] then
-	local set_modifier = DECT.CONFIG.SETTINGS["painted_concrete_speed_modifier"]
-
 	-- Adjust walking speeds on base hazard tiles
 	for _, tile in pairs({ base_hazard_left, base_hazard_right, base_refined_hazard_left, base_refined_hazard_right }) do
 		meld(tile, {
@@ -237,11 +232,7 @@ if DECT.ENABLED["painted-concrete"] then
 				next_direction = "dect-paint-" .. variant.name .. "-" .. direction.next,
 				minable = { mining_time = 0.1, result = "dect-paint-" .. variant.name },
 				placeable_by = { item = "dect-paint-" .. variant.name, count = 1 },
-				variants = {
-					material_background = {
-						picture = "__Dectorio__/graphics/terrain/concrete/" .. modifier .. "/hr-concrete.png",
-					}
-				},
+				variants = {material_background = {picture = "__Dectorio__/graphics/terrain/concrete/" .. modifier .. "/hr-concrete.png"}},
 				map_color = variant.color,
 			})
 			-- Refined variant
@@ -254,15 +245,11 @@ if DECT.ENABLED["painted-concrete"] then
 				walking_speed_modifier = base_concrete.walking_speed_modifier * set_modifier,
 				decorative_removal_probability = decorative_removal_probability,
 				placeable_by = { item = "dect-paint-refined-" .. variant.name, count = 1 },
-				variants = {
-					material_background = {
-						picture = "__Dectorio__/graphics/terrain/refined-concrete/" .. modifier .. "/hr-refined-concrete.png",
-					}
-				},
+				variants = {material_background = {picture = "__Dectorio__/graphics/terrain/refined-concrete/" .. modifier .. "/hr-refined-concrete.png"}},
 				map_color = variant.color,
 				vehicle_friction_modifier = base_concrete.vehicle_friction_modifier * set_modifier
 			})
-			data:extend({ colored_concrete, colored_refined_concrete })
+			data:extend { colored_concrete, colored_refined_concrete }
 		end
 	end
 
@@ -286,9 +273,9 @@ if DECT.ENABLED["painted-concrete"] then
 	end
 	-- Use the Dectorio look and feel for Hazard concrete
 	if not DECT.CONFIG.SETTINGS["vanilla_hazard_concrete"] then
-		base_hazard_left.variants = tile_variants_material("concrete", "hazard-left")
-		base_hazard_right.variants = tile_variants_material("concrete", "hazard-right")
-		base_refined_hazard_left.variants = tile_variants_material("refined-concrete", "hazard-left")
-		base_refined_hazard_right.variants = tile_variants_material("refined-concrete", "hazard-right")
+		meld(base_hazard_left, { variants = { material_background = { picture = "__Dectorio__/graphics/terrain/concrete/hazard-left/hr-concrete.png" } } })
+		meld(base_hazard_right, { variants = { material_background = { picture = "__Dectorio__/graphics/terrain/concrete/hazard-right/hr-concrete.png" } } })
+		meld(base_refined_hazard_left, { variants = { material_background = { picture = "__Dectorio__/graphics/terrain/refined-concrete/hazard-left/hr-refined-concrete.png" } } })
+		meld(base_refined_hazard_right, { variants = { material_background = { picture = "__Dectorio__/graphics/terrain/refined-concrete/hazard-right/hr-refined-concrete.png" } } })
 	end
 end
